@@ -1,11 +1,20 @@
 package org.dmiit3iy.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.dmiit3iy.dto.ResponseResult;
 import org.dmiit3iy.model.User;
+import org.dmiit3iy.model.UserFile;
 import org.dmiit3iy.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.nio.file.Files;
 
 @Service
 public class UserServiceImpl implements UserService{
@@ -42,5 +51,10 @@ public class UserServiceImpl implements UserService{
     public User get(long id) {
         return userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Такого пользователя нет"));
     }
+
+
+
+
+
 }
 

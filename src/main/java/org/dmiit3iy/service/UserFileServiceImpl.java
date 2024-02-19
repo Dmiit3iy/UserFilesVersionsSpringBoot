@@ -1,6 +1,8 @@
 package org.dmiit3iy.service;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.dmiit3iy.dto.ResponseResult;
 import org.dmiit3iy.model.User;
 import org.dmiit3iy.model.UserFile;
 import org.dmiit3iy.repository.UserFileRepository;
@@ -9,7 +11,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.nio.file.Files;
 import java.util.List;
 
 @Service
@@ -44,14 +48,14 @@ public class UserFileServiceImpl implements UserFileService {
 
             UserFile userFile = new UserFile();
             userFile.setFilename(name);
-userFile.setUser(user);
+            userFile.setUser(user);
             UserFile userFileNew = userFileRepository.save(userFile);
-           // userFileNew.setUser(user);
+            // userFileNew.setUser(user);
 
 //            UserFile userFileNew = userFileRepository.save(userFile);
 //            userFileNew.setUser(user);
 
-           // UserFile userFile1 = userFileRepository.save(userFileNew);
+            // UserFile userFile1 = userFileRepository.save(userFileNew);
             String serverFilename = userFileNew.getId() + "." + name.substring(name.indexOf(".") + 1);
             userFileNew.setServerFilename(serverFilename);
 
@@ -103,5 +107,30 @@ userFile.setUser(user);
         base.setServerFilename(userFile.getServerFilename());
 
         return userFileRepository.save(base);
+    }
+
+
+    public void getFileMime(HttpServletResponse response, long id, String fileName) throws IOException {
+        UserFile userFile = this.get(id, fileName);
+        String serverFileName = userFile.getServerFilename();
+        File file = new File("C:\\files", serverFileName);
+        try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(file))) {
+            response.getOutputStream().write(stream.readAllBytes());
+            String mime = Files.probeContentType(file.toPath());
+            response.setContentType(mime);
+        } catch (Exception e) {
+            response.setContentType("application/json");
+            new ObjectMapper().writeValue(response.getWriter(),
+                    new ResponseResult<>(null, "Error file uploading"));
+        }
+    }
+
+    public byte[] getFileByte(long id, String fileName) throws IOException {
+        UserFile userFile = this.get(id, fileName);
+        String serverFileName = userFile.getServerFilename();
+        try (BufferedInputStream stream = new BufferedInputStream(
+                new FileInputStream(new File("C:\\files", serverFileName)))) {
+            return stream.readAllBytes();
+        }
     }
 }
