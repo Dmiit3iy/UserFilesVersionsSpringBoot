@@ -35,9 +35,7 @@ public class FileController {
                                                        @RequestPart MultipartFile document) {
         try {
             userFileService.add(id, document);
-
-            return new ResponseEntity<>(
-                    new ResponseResult<>(null, "File uploaded successfully"), HttpStatus.OK);
+            return new ResponseEntity<>(new ResponseResult<>(null, "File uploaded successfully"), HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(
                     new ResponseResult<>(null, "File already exist"), HttpStatus.BAD_REQUEST);

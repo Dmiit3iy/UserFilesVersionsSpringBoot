@@ -1,13 +1,11 @@
 package org.dmiit3iy.service;
 
-import org.dmiit3iy.dto.ResponseResult;
+
 import org.dmiit3iy.model.User;
 import org.dmiit3iy.model.UserFile;
 import org.dmiit3iy.repository.UserFileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,7 +33,7 @@ public class UserFileServiceImpl implements UserFileService {
         try {
             //TODO Добавить в юзерфайл новое поле вершн
             //TODO при добавлении пользователем с  таким же именем как он ранее отправлял производить увелечение версии (ver1, ver2..)
-          //  при возвращении списка файлов, возвращать с версиями,
+            //  при возвращении списка файлов, возвращать с версиями,
             File fileRoot = new File("C:\\files");
             if (!fileRoot.exists()) {
                 fileRoot.mkdirs();
@@ -46,12 +44,16 @@ public class UserFileServiceImpl implements UserFileService {
 
             UserFile userFile = new UserFile();
             userFile.setFilename(name);
+userFile.setUser(user);
             UserFile userFileNew = userFileRepository.save(userFile);
-            userFileNew.setUser(user);
+           // userFileNew.setUser(user);
 
-            UserFile userFile1 = userFileRepository.save(userFileNew);
-            String serverFilename = userFile1.getId() + "." + name.substring(name.indexOf(".") + 1);
-            userFile1.setServerFilename(serverFilename);
+//            UserFile userFileNew = userFileRepository.save(userFile);
+//            userFileNew.setUser(user);
+
+           // UserFile userFile1 = userFileRepository.save(userFileNew);
+            String serverFilename = userFileNew.getId() + "." + name.substring(name.indexOf(".") + 1);
+            userFileNew.setServerFilename(serverFilename);
 
 
             byte[] bytes = document.getBytes();
@@ -59,7 +61,7 @@ public class UserFileServiceImpl implements UserFileService {
                          = new BufferedOutputStream(new FileOutputStream(new File(fileRoot, serverFilename)))) {
                 bufferedOutputStream.write(bytes);
             }
-            return userFileRepository.save(userFile1);
+            return userFileRepository.save(userFileNew);
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("This file already added!");
         } catch (FileNotFoundException e) {
@@ -74,12 +76,23 @@ public class UserFileServiceImpl implements UserFileService {
     public List<UserFile> get(long id) {
         return userFileRepository.findUserFilesByUserId(id);
     }
-//TODO !!!!!третий параметр
-    @Override
-    public UserFile get(long id, String filename, String ver) {
-        return userFileRepository.findUserFileByFilenameAndUserId(filename, id);
 
+    //TODO !!!!!третий параметр
+    @Override
+    public UserFile get(long id, String filename) {
+        return userFileRepository.findUserFileByFilenameAndUserId(filename, id);
     }
+
+
+//    @Override
+//    public List<UserFile> get(long id) {
+//        return userFileRepository.findUserFilesByUserId(id);
+//    }
+//    //TODO !!!!!третий параметр
+//    @Override
+//    public UserFile get(long id, String filename, String ver) {
+//        return userFileRepository.findUserFileByFilenameAndUserId(filename, id);
+//    }
 
     @Override
     public UserFile update(UserFile userFile) {

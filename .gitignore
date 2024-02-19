@@ -1,3 +1,4 @@
 ﻿target/classes/application.properties
 src/main/resources/application.properties
 .idea
+target/
