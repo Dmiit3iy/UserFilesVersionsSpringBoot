@@ -44,8 +44,8 @@ public class FileController {
      * @throws IOException
      */
     @GetMapping(path = "/byte/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public @ResponseBody byte[] getFile(@PathVariable long id, @RequestParam String fileName) throws IOException {
-        return userFileService.getFileByte(id, fileName);
+    public @ResponseBody byte[] getFile(@PathVariable long id, @RequestParam String fileName, int version) throws IOException {
+        return userFileService.getFileByte(id, fileName, version);
     }
 
     @GetMapping(path = "/{id}")
@@ -53,10 +53,10 @@ public class FileController {
         List<UserFile> list = userFileService.get(id);
         return new ResponseEntity<>(new ResponseResult<>(null, list), HttpStatus.OK);
     }
-    
+
     @GetMapping(value = "/mime/{fileName}")
-    public void getFile(HttpServletResponse response, @PathVariable String fileName, @RequestParam long id) throws IOException {
-        userFileService.getFileMime(response, id, fileName);
+    public void getFile(HttpServletResponse response, @PathVariable String fileName, @RequestParam long id,@RequestParam int version) throws IOException {
+        userFileService.getFileMime(response, id, fileName, version);
     }
 
 }
