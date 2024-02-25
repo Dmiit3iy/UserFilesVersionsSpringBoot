@@ -22,18 +22,21 @@ public class UserController {
     }
 
     @PostMapping
-    ResponseEntity<ResponseResult<User>> post(@RequestParam String fio, @RequestParam String login, @RequestParam String password) {
+    public ResponseEntity<ResponseResult<User>> post(@RequestParam String fio,
+                                                     @RequestParam String login,
+                                                     @RequestParam String password) {
         try {
             User user = new User(fio, login, password);
             this.userService.add(user);
             return new ResponseEntity<>(new ResponseResult<>(null, user), HttpStatus.OK);
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(new ResponseResult<>(e.getMessage(), null), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(new ResponseResult<>(e.getMessage(), null),
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
     @GetMapping
-    public ResponseEntity<ResponseResult<User>> getAuth(Authentication authentication) {
+    public ResponseEntity<ResponseResult<User>> get(Authentication authentication) {
         if (authentication.isAuthenticated()) {
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             User user = userService.get(userDetails.getId());

@@ -1,12 +1,14 @@
 package org.dmiit3iy.controller;
 
 import org.dmiit3iy.dto.ResponseResult;
+import org.dmiit3iy.model.UserDetailsImpl;
 import org.dmiit3iy.model.UserFile;
 import org.dmiit3iy.service.UserFileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,10 +28,11 @@ public class FileController {
     }
 
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    public ResponseEntity<ResponseResult<String>> save(@RequestPart String id, @RequestPart MultipartFile document) {
+    public ResponseEntity<ResponseResult<String>> save(Authentication authentication, @RequestPart MultipartFile document) {
         try {
-            userFileService.add(id, document);
+            userFileService.add(authentication, document);
             return new ResponseEntity<>(new ResponseResult<>(null, "File uploaded successfully"), HttpStatus.OK);
+
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(new ResponseResult<>("File already exist", null), HttpStatus.BAD_REQUEST);
         }
@@ -38,25 +41,30 @@ public class FileController {
     /**
      * возвращает файл для заданного id пользователя и оригинального имени файла
      *
-     * @param id
      * @param fileName
      * @return
      * @throws IOException
      */
-    @GetMapping(path = "/byte/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public @ResponseBody byte[] getFile(@PathVariable long id, @RequestParam String fileName, int version) throws IOException {
-        return userFileService.getFileByte(id, fileName, version);
+    @GetMapping(path = "/byte/", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public @ResponseBody byte[] getFile(Authentication authentication, @RequestParam String fileName, int version) throws IOException {
+
+            return userFileService.getFileByte(authentication, fileName, version);
+
     }
 
-    @GetMapping(path = "/{id}")
-    public ResponseEntity<ResponseResult<List<UserFile>>> getList(@PathVariable long id) {
-        List<UserFile> list = userFileService.get(id);
-        return new ResponseEntity<>(new ResponseResult<>(null, list), HttpStatus.OK);
+    @GetMapping()
+    public ResponseEntity<ResponseResult<List<UserFile>>> getList(Authentication authentication) {
+                   List<UserFile> list = userFileService.get(authentication);
+            return new ResponseEntity<>(new ResponseResult<>(null, list), HttpStatus.OK);
+
     }
 
     @GetMapping(value = "/mime/{fileName}")
-    public void getFile(HttpServletResponse response, @PathVariable String fileName, @RequestParam long id,@RequestParam int version) throws IOException {
-        userFileService.getFileMime(response, id, fileName, version);
-    }
+    public void getFile(HttpServletResponse response, @PathVariable String fileName, Authentication authentication, @RequestParam int version) throws IOException {
+
+
+            userFileService.getFileMime(response, authentication, fileName, version);
+        }
+
 
 }
