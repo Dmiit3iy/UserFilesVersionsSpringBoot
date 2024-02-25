@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.nio.file.Files;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -35,31 +36,28 @@ public class UserFileServiceImpl implements UserFileService {
     @Override
     public UserFile add(String id, MultipartFile document) {
         try {
-            //TODO Добавить в юзерфайл новое поле вершн
+            //TODO Добавить в юзерфайл новое поле вершн(+)
             //TODO при добавлении пользователем с  таким же именем как он ранее отправлял производить увелечение версии (ver1, ver2..)
             //  при возвращении списка файлов, возвращать с версиями,
             File fileRoot = new File("C:\\files");
             if (!fileRoot.exists()) {
                 fileRoot.mkdirs();
             }
-
-            User user = userService.get(Long.valueOf(id));
+            long idUser= Long.valueOf(id);
+            User user = userService.get(idUser);
             String name = document.getOriginalFilename();
 
             UserFile userFile = new UserFile();
             userFile.setFilename(name);
             userFile.setUser(user);
+            if(!userFileRepository.findUserFilesByUserId(idUser).isEmpty()){
+            int newVersion=userFileRepository.findUserFilesByUserId(idUser).stream().filter(x->x.getFilename().equals(name)).mapToInt(x->x.getVersion()).max().orElse(1);
+            userFile.setVersion(newVersion+1);
+            }
             UserFile userFileNew = userFileRepository.save(userFile);
-            // userFileNew.setUser(user);
 
-//            UserFile userFileNew = userFileRepository.save(userFile);
-//            userFileNew.setUser(user);
-
-            // UserFile userFile1 = userFileRepository.save(userFileNew);
             String serverFilename = userFileNew.getId() + "." + name.substring(name.indexOf(".") + 1);
             userFileNew.setServerFilename(serverFilename);
-
-
             byte[] bytes = document.getBytes();
             try (BufferedOutputStream bufferedOutputStream
                          = new BufferedOutputStream(new FileOutputStream(new File(fileRoot, serverFilename)))) {
@@ -83,26 +81,17 @@ public class UserFileServiceImpl implements UserFileService {
 
     //TODO !!!!!третий параметр
     @Override
-    public UserFile get(long id, String filename) {
-        return userFileRepository.findUserFileByFilenameAndUserId(filename, id);
+    public UserFile get(long id, String filename, int version) {
+        return userFileRepository.findUserFileByFilenameAndUserIdAndVersion(filename, id, version);
     }
 
-
-//    @Override
-//    public List<UserFile> get(long id) {
-//        return userFileRepository.findUserFilesByUserId(id);
-//    }
-//    //TODO !!!!!третий параметр
-//    @Override
-//    public UserFile get(long id, String filename, String ver) {
-//        return userFileRepository.findUserFileByFilenameAndUserId(filename, id);
-//    }
 
     @Override
     public UserFile update(UserFile userFile) {
         long id = userFile.getUser().getId();
         String fileName = userFile.getFilename();
-        UserFile base = userFileRepository.findUserFileByFilenameAndUserId(fileName, id);
+        int version = userFile.getVersion();
+        UserFile base = userFileRepository.findUserFileByFilenameAndUserIdAndVersion(fileName, id, version);
 
         base.setServerFilename(userFile.getServerFilename());
 
@@ -110,8 +99,8 @@ public class UserFileServiceImpl implements UserFileService {
     }
 
 
-    public void getFileMime(HttpServletResponse response, long id, String fileName) throws IOException {
-        UserFile userFile = this.get(id, fileName);
+    public void getFileMime(HttpServletResponse response, long id, String fileName, int version) throws IOException {
+        UserFile userFile = this.get(id, fileName, version);
         String serverFileName = userFile.getServerFilename();
         File file = new File("C:\\files", serverFileName);
         try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(file))) {
@@ -125,8 +114,9 @@ public class UserFileServiceImpl implements UserFileService {
         }
     }
 
-    public byte[] getFileByte(long id, String fileName) throws IOException {
-        UserFile userFile = this.get(id, fileName);
+
+    public byte[] getFileByte(long id, String fileName, int version) throws IOException {
+        UserFile userFile = this.get(id, fileName, version);
         String serverFileName = userFile.getServerFilename();
         try (BufferedInputStream stream = new BufferedInputStream(
                 new FileInputStream(new File("C:\\files", serverFileName)))) {

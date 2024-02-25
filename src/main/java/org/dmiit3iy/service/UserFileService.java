@@ -13,10 +13,10 @@ public interface UserFileService {
 
     List<UserFile> get(long id);
 
-    UserFile get(long id, String filename);
+    UserFile get(long id, String filename, int version);
 
     UserFile update(UserFile userFile);
-    void getFileMime(HttpServletResponse response, long id, String fileName) throws IOException;
+    void getFileMime(HttpServletResponse response, long id, String fileName, int version) throws IOException;
 
-    byte[] getFileByte(long id, String fileName) throws IOException;
+    byte[] getFileByte(long id, String fileName, int version) throws IOException;
 }
