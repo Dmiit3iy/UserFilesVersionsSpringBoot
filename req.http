@@ -1,3 +1,8 @@
 POST http://localhost:8080/user?fio=Abraham Abraham&login=qwerty&password=123
 ###
+POST http://localhost:8080/user?fio=Abdraham Abrdaham&login=ali&password=123
+###
 GET http://localhost:8080/file/1
+###
+POST http://localhost:8080/user?fio=A2bdraham Abrdaham&login=ali2&password=123
+###

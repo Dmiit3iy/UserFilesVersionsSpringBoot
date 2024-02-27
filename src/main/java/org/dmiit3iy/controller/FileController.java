@@ -48,14 +48,14 @@ public class FileController {
     @GetMapping(path = "/byte/", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public @ResponseBody byte[] getFile(Authentication authentication, @RequestParam String fileName, int version) throws IOException {
 
-            return userFileService.getFileByte(authentication, fileName, version);
+        return userFileService.getFileByte(authentication, fileName, version);
 
     }
 
     @GetMapping()
     public ResponseEntity<ResponseResult<List<UserFile>>> getList(Authentication authentication) {
-                   List<UserFile> list = userFileService.get(authentication);
-            return new ResponseEntity<>(new ResponseResult<>(null, list), HttpStatus.OK);
+        List<UserFile> list = userFileService.get(authentication);
+        return new ResponseEntity<>(new ResponseResult<>(null, list), HttpStatus.OK);
 
     }
 
@@ -63,8 +63,12 @@ public class FileController {
     public void getFile(HttpServletResponse response, @PathVariable String fileName, Authentication authentication, @RequestParam int version) throws IOException {
 
 
-            userFileService.getFileMime(response, authentication, fileName, version);
-        }
+        userFileService.getFileMime(response, authentication, fileName, version);
+    }
 
+    @GetMapping("/zip")
+    public void getZip(HttpServletResponse response, Authentication authentication) throws IOException {
+        userFileService.getZip(response, authentication);
+    }
 
 }

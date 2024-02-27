@@ -2,6 +2,7 @@ package org.dmiit3iy.service;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import net.lingala.zip4j.ZipFile;
 import org.dmiit3iy.dto.ResponseResult;
 import org.dmiit3iy.model.User;
 import org.dmiit3iy.model.UserDetailsImpl;
@@ -42,9 +43,7 @@ public class UserFileServiceImpl implements UserFileService {
         if (authentication != null && authentication.isAuthenticated()) {
             long idUser = ((UserDetailsImpl) authentication.getPrincipal()).getId();
             try {
-                //TODO Добавить в юзерфайл новое поле вершн(+)
-                //TODO при добавлении пользователем с  таким же именем как он ранее отправлял производить увелечение версии (ver1, ver2..)
-                //  при возвращении списка файлов, возвращать с версиями,
+
                 File fileRoot = new File("C:\\files");
                 if (!fileRoot.exists()) {
                     fileRoot.mkdirs();
@@ -57,7 +56,7 @@ public class UserFileServiceImpl implements UserFileService {
                 userFile.setFilename(name);
                 userFile.setUser(user);
                 if (!userFileRepository.findUserFilesByUserId(idUser).isEmpty()) {
-                    int newVersion = userFileRepository.findUserFilesByUserId(idUser).stream().filter(x -> x.getFilename().equals(name)).mapToInt(x -> x.getVersion()).max().orElse(1);
+                    int newVersion = userFileRepository.findUserFilesByUserId(idUser).stream().filter(x -> x.getFilename().equals(name)).mapToInt(x -> x.getVersion()).max().orElse(0);
                     userFile.setVersion(newVersion + 1);
                 }
                 UserFile userFileNew = userFileRepository.save(userFile);
@@ -91,7 +90,6 @@ public class UserFileServiceImpl implements UserFileService {
         return null;
     }
 
-    //TODO !!!!!третий параметр
     @Override
     public UserFile get(Authentication authentication, String filename, int version) {
         if (authentication != null && authentication.isAuthenticated()) {
@@ -100,6 +98,61 @@ public class UserFileServiceImpl implements UserFileService {
             return userFileRepository.findUserFileByFilenameAndUserIdAndVersion(filename, id, version);
         }
         return null;
+    }
+
+    @Override
+    public void getZip(HttpServletResponse response, Authentication authentication) throws IOException {
+        List<UserFile> userFileList = get(authentication);
+        if (!userFileList.isEmpty()) {
+            File tmp = new File("\\C:\\\\files\\tmp");
+            tmp.mkdirs();
+            for (UserFile x : userFileList) {
+                File f = new File("\\C:\\\\files\\" + x.getServerFilename());
+                File fNew = new File("\\C:\\\\files\\tmp\\" + x.getFilename().substring(0, x.getFilename().lastIndexOf(".")) + "_" + x.getVersion() +
+                        x.getFilename().substring(x.getFilename().indexOf(".")));
+                //  f.renameTo(fNew);
+                if (f.exists()) {
+                    Files.copy(f.toPath(), fNew.toPath());
+                }
+            }
+
+            try (ZipFile zipFile = new ZipFile("\\C:\\\\files\\userFiles.zip")) {
+                File[] files = tmp.listFiles();
+                for (File f : files) {
+                    zipFile.addFile(f);
+                }
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+            File zipSendFile = new File("\\C:\\\\files\\userFiles.zip");
+            try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(zipSendFile))) {
+                response.getOutputStream().write(stream.readAllBytes());
+                String mime = Files.probeContentType(zipSendFile.toPath());
+                response.setContentType(mime);
+            } catch (Exception e) {
+                response.setContentType("application/json");
+                new ObjectMapper().writeValue(response.getWriter(),
+                        new ResponseResult<>(null, "Error file uploading"));
+            } finally {
+                if (tmp.exists()) {
+                    String[] entries = tmp.list();
+                    for (String s : entries) {
+                        File currentFile = new File(tmp.getPath(), s);
+                        currentFile.delete();
+                    }
+
+                    tmp.delete();
+                }
+                if (zipSendFile.exists()) {
+                    zipSendFile.delete();
+                }
+            }
+        } else {
+            response.setContentType("application/json");
+            new ObjectMapper().writeValue(response.getWriter(),
+                    new ResponseResult<>(null, "The user does not have any files to download"));
+        }
+
     }
 
     @Override
@@ -132,4 +185,5 @@ public class UserFileServiceImpl implements UserFileService {
         }
         return null;
     }
+
 }
