@@ -21,6 +21,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UserFileServiceImpl implements UserFileService {
@@ -94,29 +95,37 @@ public class UserFileServiceImpl implements UserFileService {
     public UserFile get(Authentication authentication, String filename, int version) {
         if (authentication != null && authentication.isAuthenticated()) {
             long id = ((UserDetailsImpl) authentication.getPrincipal()).getId();
-
             return userFileRepository.findUserFileByFilenameAndUserIdAndVersion(filename, id, version);
         }
         return null;
     }
 
+
+    /**
+     * Возвращает zip архив со всеми загруженными файлами пользователя, проименованные в формате: имя_версия
+     *
+     * @param response
+     * @param authentication
+     * @throws IOException
+     */
     @Override
     public void getZip(HttpServletResponse response, Authentication authentication) throws IOException {
         List<UserFile> userFileList = get(authentication);
         if (!userFileList.isEmpty()) {
-            File tmp = new File("\\C:\\\\files\\tmp");
+            File fileRoot = new File("C:\\files");
+            File tmp = new File(fileRoot,"tmp");
             tmp.mkdirs();
             for (UserFile x : userFileList) {
-                File f = new File("\\C:\\\\files\\" + x.getServerFilename());
-                File fNew = new File("\\C:\\\\files\\tmp\\" + x.getFilename().substring(0, x.getFilename().lastIndexOf(".")) + "_" + x.getVersion() +
-                        x.getFilename().substring(x.getFilename().indexOf(".")));
-                //  f.renameTo(fNew);
+                File f = new File(fileRoot, x.getServerFilename());
+                File fNew = new File(tmp.getAbsolutePath(),
+                         x.getFilename().substring(0, x.getFilename().lastIndexOf(".")) + "_" + x.getVersion() +
+                        x.getFilename().substring(x.getFilename().lastIndexOf(".")));
                 if (f.exists()) {
                     Files.copy(f.toPath(), fNew.toPath());
                 }
             }
 
-            try (ZipFile zipFile = new ZipFile("\\C:\\\\files\\userFiles.zip")) {
+            try (ZipFile zipFile = new ZipFile(fileRoot.getAbsolutePath()+"\\userFiles.zip")) {
                 File[] files = tmp.listFiles();
                 for (File f : files) {
                     zipFile.addFile(f);
@@ -124,7 +133,7 @@ public class UserFileServiceImpl implements UserFileService {
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
-            File zipSendFile = new File("\\C:\\\\files\\userFiles.zip");
+            File zipSendFile = new File(fileRoot, "userFiles.zip");
             try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(zipSendFile))) {
                 response.getOutputStream().write(stream.readAllBytes());
                 String mime = Files.probeContentType(zipSendFile.toPath());
@@ -134,18 +143,13 @@ public class UserFileServiceImpl implements UserFileService {
                 new ObjectMapper().writeValue(response.getWriter(),
                         new ResponseResult<>(null, "Error file uploading"));
             } finally {
-                if (tmp.exists()) {
-                    String[] entries = tmp.list();
-                    for (String s : entries) {
-                        File currentFile = new File(tmp.getPath(), s);
-                        currentFile.delete();
-                    }
-
-                    tmp.delete();
+                String[] entries = tmp.list();
+                for (String s : entries) {
+                    File currentFile = new File(tmp.getPath(), s);
+                    currentFile.delete();
                 }
-                if (zipSendFile.exists()) {
-                    zipSendFile.delete();
-                }
+                tmp.delete();
+                zipSendFile.delete();
             }
         } else {
             response.setContentType("application/json");
@@ -154,6 +158,7 @@ public class UserFileServiceImpl implements UserFileService {
         }
 
     }
+
 
     @Override
     public void getFileMime(HttpServletResponse response, Authentication authentication, String fileName, int version) throws IOException {
@@ -170,6 +175,58 @@ public class UserFileServiceImpl implements UserFileService {
             new ObjectMapper().writeValue(response.getWriter(),
                     new ResponseResult<>(null, "Error file uploading"));
         }
+    }
+
+    @Override
+    public void getOneFileVersionsZip(HttpServletResponse response, Authentication authentication, String fileName) throws IOException {
+        List<UserFile> userFileList = get(authentication).stream().
+                filter(x->x.getFilename().equals(fileName)).collect(Collectors.toList());
+        if (!userFileList.isEmpty()) {
+            File fileRoot = new File("C:\\files");
+            File tmp = new File(fileRoot,"tmp");
+            tmp.mkdirs();
+            for (UserFile x : userFileList) {
+                File f = new File(fileRoot, x.getServerFilename());
+                File fNew = new File(tmp.getAbsolutePath(),
+                        x.getFilename().substring(0, x.getFilename().lastIndexOf(".")) + "_" + x.getVersion() +
+                                x.getFilename().substring(x.getFilename().lastIndexOf(".")));
+                if (f.exists()) {
+                    Files.copy(f.toPath(), fNew.toPath());
+                }
+            }
+
+            try (ZipFile zipFile = new ZipFile(fileRoot.getAbsolutePath()+"\\userFiles.zip")) {
+                File[] files = tmp.listFiles();
+                for (File f : files) {
+                    zipFile.addFile(f);
+                }
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+            File zipSendFile = new File(fileRoot, "userFiles.zip");
+            try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(zipSendFile))) {
+                response.getOutputStream().write(stream.readAllBytes());
+                String mime = Files.probeContentType(zipSendFile.toPath());
+                response.setContentType(mime);
+            } catch (Exception e) {
+                response.setContentType("application/json");
+                new ObjectMapper().writeValue(response.getWriter(),
+                        new ResponseResult<>(null, "Error file uploading"));
+            } finally {
+                String[] entries = tmp.list();
+                for (String s : entries) {
+                    File currentFile = new File(tmp.getPath(), s);
+                    currentFile.delete();
+                }
+                tmp.delete();
+                zipSendFile.delete();
+            }
+        } else {
+            response.setContentType("application/json");
+            new ObjectMapper().writeValue(response.getWriter(),
+                    new ResponseResult<>(null, "The user does not have any files to download"));
+        }
+
     }
 
 

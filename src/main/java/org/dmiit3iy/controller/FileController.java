@@ -71,4 +71,8 @@ public class FileController {
         userFileService.getZip(response, authentication);
     }
 
+    @GetMapping("/zip/{filename}")
+    public void getVersionZip(HttpServletResponse response, Authentication authentication, @PathVariable("filename") String name) throws IOException {
+        userFileService.getOneFileVersionsZip(response, authentication,name);
+    }
 }

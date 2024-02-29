@@ -22,5 +22,6 @@ public interface UserFileService {
 
     void getFileMime(HttpServletResponse response, Authentication authentication, String fileName, int version) throws IOException;
 
+     void getOneFileVersionsZip(HttpServletResponse response, Authentication authentication, String fileName) throws IOException;
     byte[] getFileByte(Authentication authentication, String fileName, int version) throws IOException;
 }
