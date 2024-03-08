@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+
 import net.lingala.zip4j.ZipFile;
 
 
@@ -17,11 +18,12 @@ public interface UserFileService {
 
     UserFile get(Authentication authentication, String filename, int version);
 
-   void getZip(HttpServletResponse response,Authentication authentication) throws IOException;
+    void getZip(HttpServletResponse response, Authentication authentication) throws IOException;
 
 
     void getFileMime(HttpServletResponse response, Authentication authentication, String fileName, int version) throws IOException;
 
-     void getOneFileVersionsZip(HttpServletResponse response, Authentication authentication, String fileName) throws IOException;
+    void getOneFileVersionsZip(HttpServletResponse response, Authentication authentication, String fileName) throws IOException;
+
     byte[] getFileByte(Authentication authentication, String fileName, int version) throws IOException;
 }

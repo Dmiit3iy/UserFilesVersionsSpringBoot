@@ -44,7 +44,6 @@ public class UserFileServiceImpl implements UserFileService {
         if (authentication != null && authentication.isAuthenticated()) {
             long idUser = ((UserDetailsImpl) authentication.getPrincipal()).getId();
             try {
-
                 File fileRoot = new File("C:\\files");
                 if (!fileRoot.exists()) {
                     fileRoot.mkdirs();
@@ -113,19 +112,19 @@ public class UserFileServiceImpl implements UserFileService {
         List<UserFile> userFileList = get(authentication);
         if (!userFileList.isEmpty()) {
             File fileRoot = new File("C:\\files");
-            File tmp = new File(fileRoot,"tmp");
+            File tmp = new File(fileRoot, "tmp");
             tmp.mkdirs();
             for (UserFile x : userFileList) {
                 File f = new File(fileRoot, x.getServerFilename());
                 File fNew = new File(tmp.getAbsolutePath(),
-                         x.getFilename().substring(0, x.getFilename().lastIndexOf(".")) + "_" + x.getVersion() +
-                        x.getFilename().substring(x.getFilename().lastIndexOf(".")));
+                        x.getFilename().substring(0, x.getFilename().lastIndexOf(".")) + "_" + x.getVersion() +
+                                x.getFilename().substring(x.getFilename().lastIndexOf(".")));
                 if (f.exists()) {
                     Files.copy(f.toPath(), fNew.toPath());
                 }
             }
 
-            try (ZipFile zipFile = new ZipFile(fileRoot.getAbsolutePath()+"\\userFiles.zip")) {
+            try (ZipFile zipFile = new ZipFile(fileRoot.getAbsolutePath() + "\\userFiles.zip")) {
                 File[] files = tmp.listFiles();
                 for (File f : files) {
                     zipFile.addFile(f);
@@ -180,10 +179,10 @@ public class UserFileServiceImpl implements UserFileService {
     @Override
     public void getOneFileVersionsZip(HttpServletResponse response, Authentication authentication, String fileName) throws IOException {
         List<UserFile> userFileList = get(authentication).stream().
-                filter(x->x.getFilename().equals(fileName)).collect(Collectors.toList());
+                filter(x -> x.getFilename().equals(fileName)).collect(Collectors.toList());
         if (!userFileList.isEmpty()) {
             File fileRoot = new File("C:\\files");
-            File tmp = new File(fileRoot,"tmp");
+            File tmp = new File(fileRoot, "tmp");
             tmp.mkdirs();
             for (UserFile x : userFileList) {
                 File f = new File(fileRoot, x.getServerFilename());
@@ -195,7 +194,7 @@ public class UserFileServiceImpl implements UserFileService {
                 }
             }
 
-            try (ZipFile zipFile = new ZipFile(fileRoot.getAbsolutePath()+"\\userFiles.zip")) {
+            try (ZipFile zipFile = new ZipFile(fileRoot.getAbsolutePath() + "\\userFiles.zip")) {
                 File[] files = tmp.listFiles();
                 for (File f : files) {
                     zipFile.addFile(f);
@@ -232,7 +231,6 @@ public class UserFileServiceImpl implements UserFileService {
 
     public byte[] getFileByte(Authentication authentication, String fileName, int version) throws IOException {
         if (authentication != null && authentication.isAuthenticated()) {
-            long id = ((UserDetailsImpl) authentication.getPrincipal()).getId();
             UserFile userFile = this.get(authentication, fileName, version);
             String serverFileName = userFile.getServerFilename();
             try (BufferedInputStream stream = new BufferedInputStream(

@@ -10,7 +10,7 @@ import javax.persistence.*;
 
 @Entity
 @Data
-@Table(name = "user_files", uniqueConstraints = {@UniqueConstraint(columnNames = {"version","filename","user_id"})})
+@Table(name = "user_files", uniqueConstraints = {@UniqueConstraint(columnNames = {"version", "filename", "user_id"})})
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserFile {
@@ -22,11 +22,11 @@ public class UserFile {
     @Column
     private String serverFilename;
     @Column
-    private int version=1;
+    private int version = 1;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     @ToString.Exclude
     @JsonIgnore
     private User user;
-    }
+}
