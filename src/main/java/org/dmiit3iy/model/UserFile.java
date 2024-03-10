@@ -23,6 +23,9 @@ public class UserFile {
     private String serverFilename;
     @Column
     private int version = 1;
+    @Column
+    @JsonIgnore
+    private String hash;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

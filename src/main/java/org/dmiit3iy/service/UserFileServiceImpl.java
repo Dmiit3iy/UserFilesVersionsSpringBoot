@@ -8,6 +8,7 @@ import org.dmiit3iy.model.User;
 import org.dmiit3iy.model.UserDetailsImpl;
 import org.dmiit3iy.model.UserFile;
 import org.dmiit3iy.repository.UserFileRepository;
+import org.dmiit3iy.util.Util;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -40,7 +41,7 @@ public class UserFileServiceImpl implements UserFileService {
     }
 
     @Override
-    public UserFile add(Authentication authentication, MultipartFile document) {
+    public UserFile add(Authentication authentication, MultipartFile document)  {
         if (authentication != null && authentication.isAuthenticated()) {
             long idUser = ((UserDetailsImpl) authentication.getPrincipal()).getId();
             try {
@@ -49,30 +50,47 @@ public class UserFileServiceImpl implements UserFileService {
                     fileRoot.mkdirs();
                 }
 
-                User user = userService.get(idUser);
+
                 String name = document.getOriginalFilename();
+                File tmp = new File(fileRoot, "tmp");
+                tmp.mkdirs();
 
-                UserFile userFile = new UserFile();
-                userFile.setFilename(name);
-                userFile.setUser(user);
-                if (!userFileRepository.findUserFilesByUserId(idUser).isEmpty()) {
-                    int newVersion = userFileRepository.findUserFilesByUserId(idUser).stream().filter(x -> x.getFilename().equals(name)).mapToInt(x -> x.getVersion()).max().orElse(0);
-                    userFile.setVersion(newVersion + 1);
-                }
-                UserFile userFileNew = userFileRepository.save(userFile);
-
-                String serverFilename = userFileNew.getId() + "." + name.substring(name.indexOf(".") + 1);
-                userFileNew.setServerFilename(serverFilename);
+                File file = new File(tmp, name);
                 byte[] bytes = document.getBytes();
                 try (BufferedOutputStream bufferedOutputStream
-                             = new BufferedOutputStream(new FileOutputStream(new File(fileRoot, serverFilename)))) {
+                             = new BufferedOutputStream(new FileOutputStream(file))) {
                     bufferedOutputStream.write(bytes);
                 }
-                return userFileRepository.save(userFileNew);
+                String hash = Util.getMD5Hash(file.getPath());
+
+                if (userFileRepository.findUserFilesByUserId(idUser).stream().filter(x -> x.getHash().equals(hash)).collect(Collectors.toList()).isEmpty()) {
+                    User user = userService.get(idUser);
+                    UserFile userFile = new UserFile();
+                    userFile.setFilename(name);
+                    userFile.setUser(user);
+                    if (!userFileRepository.findUserFilesByUserId(idUser).isEmpty()) {
+                        int newVersion = userFileRepository.findUserFilesByUserId(idUser).stream().filter(x -> x.getFilename().equals(name)).mapToInt(x -> x.getVersion()).max().orElse(0);
+                        userFile.setVersion(newVersion + 1);
+                    }
+
+                    UserFile userFileNew = userFileRepository.save(userFile);
+
+                    String serverFilename = userFileNew.getId() + "." + name.substring(name.indexOf(".") + 1);
+                    userFileNew.setServerFilename(serverFilename);
+                    userFileNew.setHash(hash);
+                    File fileNew = new File(fileRoot,serverFilename);
+                    Files.copy(file.toPath(), fileNew.toPath());
+                    file.delete();
+                    tmp.delete();
+                    return userFileRepository.save(userFileNew);
+                }
+                 else {
+                     file.delete();
+                     tmp.delete();
+                  throw new DataIntegrityViolationException("This file already added!");
+                }
             } catch (DataIntegrityViolationException e) {
                 throw new IllegalArgumentException("This file already added!");
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
